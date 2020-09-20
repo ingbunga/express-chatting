@@ -89,7 +89,7 @@
         padding-left: 14px;
       }
       #chatting > li{
-        background-color: aquamarine;
+        /*background-color: aquamarine;*/
       }
       .flexfill{
         display: flex;
@@ -194,18 +194,18 @@
         chatArea.classList.add('using');
 
         socket.on('receive', data => {
-          if(beforeWriter === data.id){
-            textLog.innerHTML += `<li><span>${data.sendText} - con</span></li>\n`
-          }else{
-            textLog.innerHTML += `<li><hr></li>`
-            textLog.innerHTML += `<li><span>${data.nickname} : ${data.sendText}</span></li>\n`
-          }
+          // if(beforeWriter === data.id){
+          //   textLog.innerHTML += `<li><span>${data.sendText} - con</span></li>\n`
+          // }else{
+          //   textLog.innerHTML += `<li><hr></li>`
+          // }
+          textLog.innerHTML += `<li><span>${data.nickname} : ${data.sendText}</span></li>\n`
           beforeWriter = data.id
           textLogWrapper.scrollTop = textLogWrapper.scrollHeight - textLogWrapper.clientHeight;
         });
 
         socket.on('announce', data => {
-          textLog.innerHTML += `<li><hr></li>`
+          // textLog.innerHTML += `<li><hr></li>`
           textLog.innerHTML += `<li><span style="color:blue">${data}</span></li>\n`
           beforeWriter = 'system'
           textLog.scrollTop = textLog.scrollHeight - textLog.clientHeight;
@@ -222,7 +222,7 @@
           alert('빈 메세지는 보낼 수 없습니다!');
           return ;
         }
-        socket.emit('send', {'sendText': sendText.value , 'id', socket.id});
+        socket.emit('send', {'sendText': sendText.value , 'id': socket.id});
         sendText.value = '';
       }
 
