@@ -153,6 +153,8 @@
       <div id="dropDownMenu">
         <ul>
           <li onclick="nameChange(event)">닉네임 변경하기</li>
+          <hr>
+          <li onclick="colorChange(event)">닉네임 색 변경하기</li>
         </ul>
       </div>
       <!-- 채팅 영역 -->
@@ -170,7 +172,8 @@
     <script>
       let socket;
       let nickname = '';
-      let domain = 'localhost';
+      let color = '#';
+      let domain = document.location.href;
 
       let sendText = document.querySelector('#sendInput');
       let chatArea = document.querySelector('article');
@@ -178,12 +181,9 @@
       let textLogWrapper = document.querySelector('.flexfill');
       let dropDownMenu = document.querySelector('#dropDownMenu'); //드롭다운 메뉴
 
-      // 방금 글쓴사람 구분.
-      let beforeWriter = 'system'
-
       // 맨 처음 연결하는 코드
       function init(){
-        socket = io.connect(`http://${domain}:3000/`);
+        socket = io.connect(`${domain}`);
         nickname = document.querySelector('#nickname').value;
 
         if(nickname === ''){
@@ -194,25 +194,14 @@
         chatArea.classList.add('using');
 
         socket.on('receive', data => {
-          // if(beforeWriter === data.id){
-          //   textLog.innerHTML += `<li><span>${data.sendText} - con</span></li>\n`
-          // }else{
-          //   textLog.innerHTML += `<li><hr></li>`
-          // }
-          textLog.innerHTML += `<li><span>${data.nickname} : ${data.sendText}</span></li>\n`
+          textLog.innerHTML += `<li><span style="color:${data.color}">${data.nickname}</span> : <span>${data.sendText}</span></li>\n`
           beforeWriter = data.id
           textLogWrapper.scrollTop = textLogWrapper.scrollHeight - textLogWrapper.clientHeight;
         });
 
         socket.on('announce', data => {
-          // textLog.innerHTML += `<li><hr></li>`
-          textLog.innerHTML += `<li><span style="color:blue">${data}</span></li>\n`
-          beforeWriter = 'system'
+          textLog.innerHTML += `<li><span style="color:white;background-color:blue">${data}</span></li>\n`
           textLog.scrollTop = textLog.scrollHeight - textLog.clientHeight;
-        });
-
-        socket.on('userList', data => {
-          console.log(data);
         });
       }
 
@@ -246,6 +235,10 @@
         socket.emit('nameChange', nickname);
       }
 
+      function colorChange(e){
+        color = prompt('html 코드 입력 ex( #ffffff )');
+        socket.emit('colorChange', color);
+      }
     </script>
   </body>
 </html>

@@ -10,7 +10,6 @@ const usersRouter = require('./routes/users');
 
 const app = express();
 app.io  = require('socket.io')();
-const crypto = require('crypto');
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -46,6 +45,8 @@ app.use(function(err, req, res, next) {
 
 usrList = {} // db 변수.
 
+let colorValed = new RegExp(/#[0-9]|[A-F]|[a-f]{6}/);
+
 // 아래로는 socket.io 코드
 
 app.io.on('connection', socket => {
@@ -55,34 +56,72 @@ app.io.on('connection', socket => {
   socket.on('handshake', data => {
     data.nickname = sanitizeHtml(data.nickname);
     usrList[socket.id] = {
-      'nickname': data.nickname
+      'nickname': data.nickname,
+      'color': getRandomColor(),
     }
     app.io.emit('announce', data.nickname + '님이 참가하셧습니다.');
-    app.io.emit('userList', usrList);
     console.log(data.nickname);
   });
 
   // 메세지를 브로드 캐스트 해줌.
   socket.on('send', data => {
+    if(!usrInList(socket.id)){
+      socket.emit('announce', '서버와의 연결이 이상해진것 같네요. 새로고침을 하세요.');
+      return;
+    };
     data.sendText = sanitizeHtml(data.sendText);
-    app.io.emit('receive', {'id': socket.id, 'nickname': usrList[socket.id].nickname,'sendText': data.sendText});
+    app.io.emit('receive', {
+      'id': socket.id, 
+      'nickname': usrList[socket.id].nickname,
+      'sendText': data.sendText,
+      'color':usrList[socket.id].color,
+    });
   });
 
   // 이름을 바꿈.
   socket.on('nameChange', data => {
+    if(!usrInList(socket.id)) return;
     data = sanitizeHtml(data);
     app.io.emit('announce', `${usrList[socket.id].nickname}님이 닉네임을 ${data}로 바꾸셧습니다.`);
     usrList[socket.id].nickname = data;
   });
 
+  // 색깔이 바뀜.
+  socket.on('colorChange', data => {
+    if(!usrInList(socket.id)) return;
+    data = sanitizeHtml(data);
+    if(!colorValed.test(data)){
+      socket.emit('announce', '올바르지 않은 색깔값을 보내셨어요.');
+      return;
+    } 
+    data = data.toUpperCase();
+    app.io.emit('announce', `${usrList[socket.id].nickname}님이 색깔을 ${data}로 바꾸셧습니다.`);
+    usrList[socket.id].color = data;
+  })
+
   // 연결이 끊길때.
   socket.on('disconnect', () => {
+    if(!usrInList(socket.id)) return;
     if(usrList[socket.id] !== undefined){
       app.io.emit('announce', usrList[socket.id].nickname + '님이 나가셨습니다.');
-      app.io.emit('userList', usrList);
       delete usrList[socket.id];
     }
   });
 });
+
+function usrInList(id){
+  let checked = false;
+  for(i in usrList) if(i == id) checked = true;
+  return checked;
+} 
+
+function getRandomColor() {
+  var letters = '0123456789ABCDEF';
+  var color = '#';
+  for (var i = 0; i < 6; i++) {
+    color += letters[Math.floor(Math.random() * 16)];
+  }
+  return color;
+}
 
 module.exports = app;
