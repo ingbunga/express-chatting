@@ -47,7 +47,7 @@ app.use(function(err, req, res, next) {
 usrList = {} // db 변수.
 
 const url2ImgTag = (url) => {
-  return  `<img src=${url.slice(1, url.length-1)}>`;
+  return  `<img style="max-width: 500px;width: 80%;" src=${url.slice(1, url.length-1)}>`;
 }
 
 let colorValed = new RegExp(/#[0-9]|[A-F]|[a-f]{6}/);
