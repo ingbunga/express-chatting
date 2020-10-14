@@ -7,6 +7,7 @@ const sanitizeHtml = require('sanitize-html');
 
 const indexRouter = require('./routes/index');
 const usersRouter = require('./routes/users');
+const { url } = require('inspector');
 
 const app = express();
 app.io  = require('socket.io')();
@@ -45,16 +46,24 @@ app.use(function(err, req, res, next) {
 
 usrList = {} // db 변수.
 
+const url2ImgTag = (url) => {
+  return  `<img src=${url.slice(1, url.length-1)}>`;
+}
+
 let colorValed = new RegExp(/#[0-9]|[A-F]|[a-f]{6}/);
+let imgUrl = new RegExp(/\[(https?:\/\/.*\.(?:png|jpg))\]/i);
 
 // 아래로는 socket.io 코드
 
 app.io.on('connection', socket => {
   console.log('클라는 살아있다...' + socket.id);
-
   // 어떤 유저가 들어오면 db 변수에 넣어줌.
   socket.on('handshake', data => {
     data.nickname = sanitizeHtml(data.nickname);
+    if(data.nickname.length > 15){
+      socket.emit('announce', '닉네임을 15자 이하로 지어주세요.');
+      return;
+    }
     usrList[socket.id] = {
       'nickname': data.nickname,
       'color': getRandomColor(),
@@ -65,11 +74,13 @@ app.io.on('connection', socket => {
 
   // 메세지를 브로드 캐스트 해줌.
   socket.on('send', data => {
+    if(typeof data.sendText !== 'string') return;
     if(!usrInList(socket.id)){
       socket.emit('announce', '서버와의 연결이 이상해진것 같네요. 새로고침을 하세요.');
       return;
     };
     data.sendText = sanitizeHtml(data.sendText);
+    data.sendText = data.sendText.replace(imgUrl, url2ImgTag);
     app.io.emit('receive', {
       'id': socket.id, 
       'nickname': usrList[socket.id].nickname,
@@ -80,7 +91,12 @@ app.io.on('connection', socket => {
 
   // 이름을 바꿈.
   socket.on('nameChange', data => {
+    if(typeof data !== 'string') return;
     if(!usrInList(socket.id)) return;
+    if(data.length > 15){
+      socket.emit('announce', '닉네임을 15자 이하로 지어주세요.');
+      return;
+    }
     data = sanitizeHtml(data);
     app.io.emit('announce', `${usrList[socket.id].nickname}님이 닉네임을 ${data}로 바꾸셧습니다.`);
     usrList[socket.id].nickname = data;
@@ -88,6 +104,7 @@ app.io.on('connection', socket => {
 
   // 색깔이 바뀜.
   socket.on('colorChange', data => {
+    if(typeof data !== 'string') return;
     if(!usrInList(socket.id)) return;
     data = sanitizeHtml(data);
     if(!colorValed.test(data)){
