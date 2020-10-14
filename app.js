@@ -94,7 +94,7 @@ app.io.on('connection', socket => {
     if(typeof data !== 'string') return;
     if(!usrInList(socket.id)) return;
     if(data.length > 15){
-      socket.emit('announce', '닉네임을 15자 이하로 지어주세요.');
+      socket.emit('announce', '닉네임을 15자 이내로 지어주세요.');
       return;
     }
     data = sanitizeHtml(data);
